@@ -1,24 +1,21 @@
 import streamlit as st
 import pandas as pd
-import pyodbc
 from tqdm import tqdm
 from streamlit_echarts import st_echarts
+from Measures import config_setup
+from Measures import measures
 st.set_page_config(page_title="Sales Dashboard", page_icon=":bar_chart:", layout="wide")
 
-def config_setup():
-    db_filepath = r'D:\Data\Documents\Business\Pandecia Bakery\Database\Pandecia.accdb'
-    conn_str = r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_filepath + ';'
-    conn = pyodbc.connect(conn_str)
-    return conn
-
 @st.cache_data
-def load_data(month):
+def load_data(month,branch_filter):
     conn = config_setup()
-    total_rows = pd.read_sql(f"SELECT COUNT(*) as count FROM DATA WHERE [Year Month] IN ('{month}')", conn)['count'][0]
+    #total_rows = pd.read_sql(f"SELECT COUNT(*) as count FROM DATA WHERE [Year Month] IN ('{month}') AND WHERE [branch_name] in {branch}", conn)['count'][0]
+    total_rows = pd.read_sql(
+        f"SELECT COUNT(*) as count FROM DATA WHERE [Year Month] IN ('{month}') AND [branch_name] IN {tuple(branch_filter)}",conn)['count'][0]
     print(total_rows)
     tqdm.pandas()
     df_list = []
-    for chunk in tqdm(pd.read_sql(f"SELECT * FROM DATA WHERE [Year Month] IN ('{month}')", conn, chunksize=1000), total=total_rows//1000 + 1):
+    for chunk in tqdm(pd.read_sql(f"SELECT * FROM DATA WHERE [Year Month] IN ('{month}') AND [branch_name] IN {tuple(branch_filter)}", conn, chunksize=1000), total=total_rows//1000 + 1):
         df_list.append(chunk)
     df = pd.concat(df_list, ignore_index=True)
 
@@ -44,42 +41,17 @@ def load_filters():
     conn = config_setup()
     query = "SELECT DISTINCT [Year Month] FROM DATA;"
     year_month = [row[0] for row in conn.execute(query)]
+    query = "SELECT DISTINCT [branch_name] FROM DATA"
+    branch_filters = [row[0] for row in conn.execute(query)]
     conn.close()
-    return year_month
-
-def measures():
-    conn = config_setup()
-    q_discount = f"""
-    SELECT 
-        FORMAT(business_date, 'yyyy-mm') AS month,
-        [branch_name],
-        SUM([discounts line]) AS discount_amount
-    FROM 
-        DATA
-    GROUP BY 
-        FORMAT(business_date, 'yyyy-mm'), [branch_name]
-    ORDER BY 
-        FORMAT(business_date, 'yyyy-mm'), [branch_name];
-    """
-
-
-
-    df = pd.read_sql(q_discount, conn)
-
-    # Close the database connection
-    conn.close()
-
-    # Display the DataFrame
-
-
-
-    return df
+    return year_month, branch_filters
 
 def main():
-    st.title('Streamlit App with Large Dataset')
-    year_month = load_filters()
+    st.title('Pandecia Dashboard')
+    year_month, branch_filters = load_filters()
+    sel_branch = st.sidebar.multiselect("Select Branch:", options=branch_filters, default=branch_filters)
     sel_month = st.sidebar.selectbox("Select Year Month:", year_month)
-    data_df = load_data(sel_month)
+    data_df = load_data(sel_month, sel_branch)
 
     a = measures()
     a
