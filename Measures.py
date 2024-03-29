@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pyodbc
 import pandas as pd
 
@@ -95,6 +97,14 @@ def measures():
     conn.close()
     return df
 
+def prev_month_string_function(str_month):
+    date_obj = datetime.strptime(str_month, '%Y-%m')
+    previous_month = date_obj.replace(day=1) - timedelta(days=1)
+    previous_month_str = previous_month.strftime('%Y-%m')
+    return previous_month_str
 
-
-
+def metrics(measures_df, sel_month):
+    barsha_cur_month_sales = measures_df[(measures_df['branch_name'] == 'Barsha') & (measures_df['month_year'] == sel_month)]['total_net_sales'].iloc[0]
+    satwa_cur_month_sales = \
+    measures_df[(measures_df['branch_name'] == 'Satwa') & (measures_df['month_year'] == sel_month)]['total_net_sales'].iloc[0]
+    return barsha_cur_month_sales, satwa_cur_month_sales
