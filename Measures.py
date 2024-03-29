@@ -15,17 +15,17 @@ def measures():
     sql = f"""
         SELECT
             COUNT(*) AS order_count,
-            b_month,
-            branch
+            month_year,
+            branch_name
         FROM 
             (SELECT DISTINCT [reference],
-            FORMAT(DATA.business_date, 'yyyy-mm') as b_month,
-            [DATA.branch_name] as branch
+            FORMAT(DATA.business_date, 'yyyy-mm') as month_year,
+            [DATA.branch_name] as branch_name
             FROM DATA)
         GROUP BY
-            b_month, branch
+            month_year, branch_name
         ORDER BY
-            b_month, branch;
+            month_year, branch_name;
     """
     order_count = pd.read_sql(sql, conn)
 
@@ -33,20 +33,20 @@ def measures():
     sql = f"""
         SELECT
             COUNT(*) AS order_count,
-            b_month,
-            branch
+            month_year,
+            branch_name
         FROM 
             (
             SELECT DISTINCT [reference],
-            FORMAT(DATA.business_date, 'yyyy-mm') as b_month,
-            [DATA.branch_name] as branch
+            FORMAT(DATA.business_date, 'yyyy-mm') as month_year,
+            [DATA.branch_name] as branch_name
             FROM DATA
             WHERE [DATA.status] = 'Done'
             )
         GROUP BY
-            b_month, branch
+            month_year, branch_name
         ORDER BY
-            b_month, branch;
+            month_year, branch_name;
     """
     confirmed_orders = pd.read_sql(sql, conn)
 
@@ -56,11 +56,11 @@ def measures():
             FORMAT(business_date, 'yyyy-mm') AS month_year,
             [branch_name],
             SUM([discounts line]) AS discount_amount,
-            SUM(IIF([Status] = 'Done', [tax_exclusive_discount_amount], 0)) AS tax_exclusive_discount,
+            SUM(IIF([status] = 'Done', [tax exclusive discount amount order line], 0)) AS tax_exclusive_discount,
             SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_done,
             SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS order_item_return_total_price,
-            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) - 
-            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost,
+            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) -
+            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost,
             SUM(IIF([ITEMSstatus] = 'Done', [ITEMSquantity], 0)) AS done_item_count,
             SUM(IIF([ITEMSstatus] = 'Returned', [ITEMSquantity], 0)) AS returned_item_count,
             SUM(IIF([status] = 'Returned', [tax exclusive discount amount order line], 0)) AS returned_discount,
@@ -74,7 +74,7 @@ def measures():
             SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMSquantity], 0)) AS product_sold,
             SUM(IIF([ITEMSstatus] = 'Void' AND [ITEMStype] = 'Product', [ITEMStax_exclusive_total_price], 0)) +
             SUM(IIF([ITEMSstatus] = 'Void' AND [ITEMStype] = 'Product', [ITEMStax_exclusive_discount_amount], 0)) as void_amount,
-            SUM(IIF([ITEMSstatus] = 'ITEMSstatus' AND [ITEMStype] = 'Product', [total_price], 0)) as returned_amount
+            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [total_price], 0)) as returned_amount
         FROM 
             DATA
         GROUP BY 
@@ -82,8 +82,16 @@ def measures():
         ORDER BY 
             FORMAT(business_date, 'yyyy-mm'), [branch_name];
     """
-    df = pd.read_sql(sql, conn)
+    main_df = pd.read_sql(sql, conn)
 
+    df = pd.merge(pd.merge(main_df, order_count, on=['month_year', 'branch_name']), confirmed_orders, on=['month_year', 'branch_name'])
+    df['total_discount_amount'] = df['tax_exclusive_discount'] - df['returned_discount'] + df['product_discount']
+    df['total_gross_amount'] = (df['item_total_cost'] + df['total_discount_amount']) - df['discount_amount']
+    df['total_net_sales'] = df['total_gross_amount'] - df['total_discount_amount'] - df['total_tax_amount']
+    df.rename(columns={'order_count_x': 'order_count'}, inplace=True)
+    df.rename(columns={'order_count_y': 'confirmed_orders'}, inplace=True)
+    df['gross_sales_without_tax'] = df['total_net_sales'] + df['total_discount_amount']
+    df['net_sales_with_tax'] = df['total_net_sales'] + ['total_tax_amount']
     conn.close()
     return df
 
