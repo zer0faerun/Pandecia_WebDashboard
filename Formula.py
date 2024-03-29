@@ -85,11 +85,11 @@ branch = st.sidebar.multiselect(
 
 
 # assign calculations #############################################################
-discounts_sum = df['discounts line'].sum()
-order_count = df['reference'].nunique()
-tax_exclusive_discount = df.loc[df['status'] == 'Done', 'tax exclusive discount amount order line'].sum()
-order_item_return_total_price = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum()
-item_total_cost = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() - order_item_return_total_price
+discounts_sum = df['discounts line'].sum() #done
+order_count = df['reference'].nunique() #done
+tax_exclusive_discount = df.loc[df['status'] == 'Done', 'tax exclusive discount amount order line'].sum() #done
+order_item_return_total_price = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() #done
+item_total_cost = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() - order_item_return_total_price #done
 item_count = df['ITEMSquantity'].sum()
 done_item_count = df.loc[df['ITEMSstatus'] == "Done"]['ITEMSquantity'].sum()
 returned_item_count = df.loc[df['ITEMSstatus'] == "Returned"]['ITEMSquantity'].sum()

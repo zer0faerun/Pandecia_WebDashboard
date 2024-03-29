@@ -42,28 +42,29 @@ def measures():
     #order_count_df = pd.read_sql(sql, conn)
 
     sql = f"""
-        WITH Counts AS (
-            SELECT 
-                Format([business_date], 'yyyy-mm') AS month, 
-                [branch_name], 
-                COUNT(DISTINCT [reference]) AS order_count, 
-                SUM([discounts line]) AS discount_amount 
-            FROM 
-                DATA 
-            GROUP BY 
-                Format([business_date], 'yyyy-mm'), [branch_name]
-        ) 
         SELECT 
-            month, 
-            [branch_name], 
-            order_count, 
-            discount_amount 
+            FORMAT(business_date, 'yyyy-mm') AS month,
+            [branch_name],
+            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_done,
+            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS order_item_return_total_price,
+            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) - 
+            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost
         FROM 
-            Counts 
+            DATA
+        GROUP BY 
+            FORMAT(business_date, 'yyyy-mm'), [branch_name]
         ORDER BY 
-            month, [branch_name];
+            FORMAT(business_date, 'yyyy-mm'), [branch_name];
     """
-    df = pd.read_sql(sql1, conn)
+    df = pd.read_sql(sql, conn)
 
     conn.close()
     return df
+
+#SUM([discounts line]) AS discount_amount,
+#SUM(IIF([Status] = 'Done', [tax_exclusive_discount_amount], 0)) AS tax_exclusive_discount
+#COUNT(*) AS order_count
+#SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_done,
+#SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS order_item_return_total_price,
+#            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) -
+#            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost

@@ -55,6 +55,8 @@ def main():
 
     a = measures()
     a
+    print(data_df.dtypes)
+
     st.write(data_df)
 
     options = {
