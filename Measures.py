@@ -11,44 +11,30 @@ def config_setup():
 
 def measures():
     conn = config_setup()
-    ### Discount Measures ###
-    sql1 = f"""
-    SELECT 
-        FORMAT(business_date, 'yyyy-mm') AS month,
-        [branch_name],
-        SUM([discounts line]) AS discount_amount
-    FROM 
-        DATA
-    GROUP BY 
-        FORMAT(business_date, 'yyyy-mm'), [branch_name]
-    ORDER BY 
-        FORMAT(business_date, 'yyyy-mm'), [branch_name];
-    """
-    #discount_df = pd.read_sql(sql, conn)
-
-    ### Order Count ###
+    ### Distinct Measure ###
     sql = f"""
-        SELECT 
-            FORMAT(business_date, 'yyyy-mm') AS month,
-            [branch_name],
-            COUNT(DISTINCT [reference]) AS order_count
+        SELECT
+            COUNT(*) AS order_count,
+            b_month,
+            branch
         FROM 
-            DATA
-        GROUP BY 
-            FORMAT(business_date, 'yyyy-mm'), [branch_name]
-        ORDER BY 
-            FORMAT(business_date, 'yyyy-mm'), [branch_name];
+            (SELECT DISTINCT [reference],
+            FORMAT(DATA.business_date, 'yyyy-mm') as b_month,
+            [DATA.branch_name] as branch
+            FROM DATA)
+        GROUP BY
+            b_month, branch
+        ORDER BY
+            b_month, branch;
     """
-    #order_count_df = pd.read_sql(sql, conn)
+    order_count = pd.read_sql(sql, conn)
 
+    ### Universal Measure ###
     sql = f"""
         SELECT 
             FORMAT(business_date, 'yyyy-mm') AS month,
             [branch_name],
-            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_done,
-            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS order_item_return_total_price,
-            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) - 
-            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost
+            COUNT(*)
         FROM 
             DATA
         GROUP BY 
@@ -63,8 +49,15 @@ def measures():
 
 #SUM([discounts line]) AS discount_amount,
 #SUM(IIF([Status] = 'Done', [tax_exclusive_discount_amount], 0)) AS tax_exclusive_discount
-#COUNT(*) AS order_count
 #SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_done,
 #SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS order_item_return_total_price,
-#            SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) -
-#            SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost
+#   SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) -
+#   SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost
+#SUM(IIF([ITEMSstatus] = 'Done', [ITEMSquantity], 0)) AS done_item_count,
+#SUM(IIF([ITEMSstatus] = 'Returned', [ITEMSquantity], 0)) AS returned_item_count
+#SUM(IIF([status] = 'Returned', [tax exclusive discount amount order line], 0)) AS returned_discount,
+#SUM(IIF([ITEMSstatus] = 'Done', [ITEMStax_exclusive_discount_amount], 0)) AS product_discount
+#   SUM(IIF([status] = 'Returned', [total taxes line], 0)) -
+#   SUM(IIF([status] = 'Done', [total taxes line], 0)) AS total_tax_amount
+
+

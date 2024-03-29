@@ -90,18 +90,18 @@ order_count = df['reference'].nunique() #done
 tax_exclusive_discount = df.loc[df['status'] == 'Done', 'tax exclusive discount amount order line'].sum() #done
 order_item_return_total_price = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() #done
 item_total_cost = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() - order_item_return_total_price #done
-item_count = df['ITEMSquantity'].sum()
-done_item_count = df.loc[df['ITEMSstatus'] == "Done"]['ITEMSquantity'].sum()
-returned_item_count = df.loc[df['ITEMSstatus'] == "Returned"]['ITEMSquantity'].sum()
-returned_discount = df.loc[df['status'] == 'Returned', 'tax exclusive discount amount order line'].sum()
-product_discount = df.loc[df['ITEMSstatus'] == 'Done', 'ITEMStax_exclusive_discount_amount'].sum()
-total_discount_amount = tax_exclusive_discount - returned_discount + product_discount
-total_gross_amount = (item_total_cost + total_discount_amount) - discounts_sum
-returned_tax = df.loc[df['status'] == 'Returned', 'total taxes line'].sum()
-total_tax_amount = df.loc[df['status'] == 'Done', 'total taxes line'].sum() - returned_tax
-total_net_sales = total_gross_amount - total_discount_amount - total_tax_amount
-net_sales_with_tax = total_net_sales + total_tax_amount
-gross_sales_without_tax = total_net_sales + total_discount_amount
+item_count = df['ITEMSquantity'].sum() #done
+done_item_count = df.loc[df['ITEMSstatus'] == "Done"]['ITEMSquantity'].sum() #done
+returned_item_count = df.loc[df['ITEMSstatus'] == "Returned"]['ITEMSquantity'].sum() #done
+returned_discount = df.loc[df['status'] == 'Returned', 'tax exclusive discount amount order line'].sum() #d
+product_discount = df.loc[df['ITEMSstatus'] == 'Done', 'ITEMStax_exclusive_discount_amount'].sum() #d
+total_discount_amount = tax_exclusive_discount - returned_discount + product_discount #later
+total_gross_amount = (item_total_cost + total_discount_amount) - discounts_sum #later
+returned_tax = df.loc[df['status'] == 'Returned', 'total taxes line'].sum() #d
+total_tax_amount = df.loc[df['status'] == 'Done', 'total taxes line'].sum() - returned_tax #
+total_net_sales = total_gross_amount - total_discount_amount - total_tax_amount #later
+net_sales_with_tax = total_net_sales + total_tax_amount #later
+gross_sales_without_tax = total_net_sales + total_discount_amount #laater
 confirmed_orders = df.loc[df['status'] == 'Done', 'reference'].nunique()
 total_qty = df['ITEMSquantity'].sum()
 qty_returned = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum()
@@ -156,3 +156,16 @@ echarts_code = """
 """
 
 st.components.v1.html(echarts_code)
+
+sql = f"""
+    SELECT 
+        FORMAT(business_date, 'yyyy-mm') AS month,
+        [branch_name],
+        COUNT(*)
+    FROM 
+        DATA
+    GROUP BY 
+        FORMAT(business_date, 'yyyy-mm'), [branch_name]
+    ORDER BY 
+        FORMAT(business_date, 'yyyy-mm'), [branch_name];
+"""
