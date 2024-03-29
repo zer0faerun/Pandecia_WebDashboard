@@ -85,30 +85,30 @@ branch = st.sidebar.multiselect(
 
 
 # assign calculations #############################################################
-discounts_sum = df['discounts line'].sum() #done
-order_count = df['reference'].nunique() #done
-tax_exclusive_discount = df.loc[df['status'] == 'Done', 'tax exclusive discount amount order line'].sum() #done
-order_item_return_total_price = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() #done
-item_total_cost = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() - order_item_return_total_price #done
-item_count = df['ITEMSquantity'].sum() #done
-done_item_count = df.loc[df['ITEMSstatus'] == "Done"]['ITEMSquantity'].sum() #done
-returned_item_count = df.loc[df['ITEMSstatus'] == "Returned"]['ITEMSquantity'].sum() #done
-returned_discount = df.loc[df['status'] == 'Returned', 'tax exclusive discount amount order line'].sum() #d
-product_discount = df.loc[df['ITEMSstatus'] == 'Done', 'ITEMStax_exclusive_discount_amount'].sum() #d
+#discounts_sum = df['discounts line'].sum() #done
+#order_count = df['reference'].nunique() #done
+#tax_exclusive_discount = df.loc[df['status'] == 'Done', 'tax exclusive discount amount order line'].sum() #done
+#order_item_return_total_price = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() #done
+#item_total_cost = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMStotal_price'].sum() - order_item_return_total_price #done
+#item_count = df['ITEMSquantity'].sum() #done
+#done_item_count = df.loc[df['ITEMSstatus'] == "Done"]['ITEMSquantity'].sum() #done
+#returned_item_count = df.loc[df['ITEMSstatus'] == "Returned"]['ITEMSquantity'].sum() #done
+#returned_discount = df.loc[df['status'] == 'Returned', 'tax exclusive discount amount order line'].sum() #d
+#product_discount = df.loc[df['ITEMSstatus'] == 'Done', 'ITEMStax_exclusive_discount_amount'].sum() #d
 total_discount_amount = tax_exclusive_discount - returned_discount + product_discount #later
 total_gross_amount = (item_total_cost + total_discount_amount) - discounts_sum #later
-returned_tax = df.loc[df['status'] == 'Returned', 'total taxes line'].sum() #d
-total_tax_amount = df.loc[df['status'] == 'Done', 'total taxes line'].sum() - returned_tax #
+#returned_tax = df.loc[df['status'] == 'Returned', 'total taxes line'].sum() #d
+#total_tax_amount = df.loc[df['status'] == 'Done', 'total taxes line'].sum() - returned_tax #
 total_net_sales = total_gross_amount - total_discount_amount - total_tax_amount #later
-net_sales_with_tax = total_net_sales + total_tax_amount #later
-gross_sales_without_tax = total_net_sales + total_discount_amount #laater
-confirmed_orders = df.loc[df['status'] == 'Done', 'reference'].nunique()
-total_qty = df['ITEMSquantity'].sum()
-qty_returned = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum()
-qty_void = df.loc[(df['ITEMSstatus'] == 'Void') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum()
-product_sold = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum() - qty_returned
-void_amount = df.loc[(df['ITEMSstatus'] == 'Void') & (df['ITEMStype'] == 'Product'), 'ITEMStax_exclusive_total_price'].sum() + df.loc[(df['ITEMSstatus'] == 'Void') & (df['ITEMStype'] == 'Product'), 'ITEMStax_exclusive_discount_amount'].sum()
-returned_amount = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'total_price'].sum()
+#net_sales_with_tax = total_net_sales + total_tax_amount #later
+#gross_sales_without_tax = total_net_sales + total_discount_amount #laater
+#confirmed_orders = df.loc[df['status'] == 'Done', 'reference'].nunique() #done
+#total_qty = df['ITEMSquantity'].sum() #d
+#qty_returned = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum()
+#qty_void = df.loc[(df['ITEMSstatus'] == 'Void') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum()
+#product_sold = df.loc[(df['ITEMSstatus'] == 'Done') & (df['ITEMStype'] == 'Product'), 'ITEMSquantity'].sum() - qty_returned
+#void_amount = df.loc[(df['ITEMSstatus'] == 'Void') & (df['ITEMStype'] == 'Product'), 'ITEMStax_exclusive_total_price'].sum() + df.loc[(df['ITEMSstatus'] == 'Void') & (df['ITEMStype'] == 'Product'), 'ITEMStax_exclusive_discount_amount'].sum()
+#returned_amount = df.loc[(df['ITEMSstatus'] == 'Returned') & (df['ITEMStype'] == 'Product'), 'total_price'].sum()
 avg_unit_price = df['ITEMSunit_price'].mean()
 
 
@@ -162,6 +162,38 @@ sql = f"""
         FORMAT(business_date, 'yyyy-mm') AS month,
         [branch_name],
         COUNT(*)
+    FROM 
+        DATA
+    GROUP BY 
+        FORMAT(business_date, 'yyyy-mm'), [branch_name]
+    ORDER BY 
+        FORMAT(business_date, 'yyyy-mm'), [branch_name];
+"""
+
+sql = f"""
+    SELECT 
+        FORMAT(business_date, 'yyyy-mm') AS month_year,
+        [branch_name],
+        SUM([discounts line]) AS discount_amount,
+        SUM(IIF([Status] = 'Done', [tax_exclusive_discount_amount], 0)) AS tax_exclusive_discount,
+        SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_done,
+        SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS order_item_return_total_price,
+        SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) - 
+        SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMStotal_price], 0)) AS item_total_cost
+        SUM(IIF([ITEMSstatus] = 'Done', [ITEMSquantity], 0)) AS done_item_count,
+        SUM(IIF([ITEMSstatus] = 'Returned', [ITEMSquantity], 0)) AS returned_item_count
+        SUM(IIF([status] = 'Returned', [tax exclusive discount amount order line], 0)) AS returned_discount,
+        SUM(IIF([ITEMSstatus] = 'Done', [ITEMStax_exclusive_discount_amount], 0)) AS product_discount,
+        SUM(IIF([status] = 'Done', [total taxes line], 0)) -
+        SUM(IIF([status] = 'Returned', [total taxes line], 0)) AS total_tax_amount,
+        SUM([ITEMSquantity]) AS total_qty,
+        SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMSquantity], 0)) AS qty_returned,
+        SUM(IIF([ITEMSstatus] = 'Void' AND [ITEMStype] = 'Product', [ITEMSquantity], 0)) AS qty_void,
+        SUM(IIF([ITEMSstatus] = 'Done' AND [ITEMStype] = 'Product', [ITEMSquantity], 0))  -
+        SUM(IIF([ITEMSstatus] = 'Returned' AND [ITEMStype] = 'Product', [ITEMSquantity], 0)) AS product_sold,
+        SUM(IIF([ITEMSstatus] = 'Void' AND [ITEMStype] = 'Product', [ITEMStax_exclusive_total_price], 0)) +
+        SUM(IIF([ITEMSstatus] = 'Void' AND [ITEMStype] = 'Product', [ITEMStax_exclusive_discount_amount], 0)) as void_amount,
+        SUM(IIF([ITEMSstatus] = 'ITEMSstatus' AND [ITEMStype] = 'Product', [total_price], 0)) as returned_amount
     FROM 
         DATA
     GROUP BY 
