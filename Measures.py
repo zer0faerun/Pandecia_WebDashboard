@@ -91,7 +91,7 @@ def measures():
     df.rename(columns={'order_count_x': 'order_count'}, inplace=True)
     df.rename(columns={'order_count_y': 'confirmed_orders'}, inplace=True)
     df['gross_sales_without_tax'] = df['total_net_sales'] + df['total_discount_amount']
-    df['net_sales_with_tax'] = df['total_net_sales'] + ['total_tax_amount']
+    df['net_sales_with_tax'] = df['total_net_sales'] + df['total_tax_amount']
     conn.close()
     return df
 
